@@ -111,12 +111,12 @@ c4.metric(
 
 st.divider()
 # ==========================================================
-# GENE EXPRESSION COMPARISON
+# GENE EXPRESSION COMPARISON (SIMPLE BAR CHART)
 # ==========================================================
 
 st.subheader("🧬 Gene Expression Comparison")
 
-# Get selected gene data
+
 normal_gene = normal[
     normal["Gene name"] == selected_gene
 ]
@@ -128,72 +128,46 @@ cancer_gene = cancer[
 
 if not normal_gene.empty and not cancer_gene.empty:
 
-    # Normal tissue value (single average value)
-    normal_value = normal_gene["nTPM"].mean()
-
-    # Cancer cell line values
-    cancer_values = cancer_gene["nTPM"]
+    # Calculate averages
+    normal_avg = normal_gene["nTPM"].mean()
+    cancer_avg = cancer_gene["nTPM"].mean()
 
 
-    # Create dataframe for plotting
-    plot_df = pd.DataFrame({
+    # Create simple dataframe
+    comparison_df = pd.DataFrame({
 
-        "Group": 
-        ["Normal Kidney"] + 
-        ["Kidney Cancer"] * len(cancer_values),
+        "Sample Type": [
+            "Normal Kidney",
+            "Kidney Cancer"
+        ],
 
-        "Expression": 
-        [normal_value] + 
-        list(cancer_values)
+        "Average Expression (nTPM)": [
+            normal_avg,
+            cancer_avg
+        ]
 
     })
 
 
-    # Plot
-    fig = px.strip(
-        plot_df,
-        x="Group",
-        y="Expression",
-        color="Group",
-        stripmode="overlay",
-        title=f"{selected_gene} Expression: Normal vs Kidney Cancer"
+    # Bar chart
+    fig = px.bar(
+        comparison_df,
+        x="Sample Type",
+        y="Average Expression (nTPM)",
+        text="Average Expression (nTPM)",
+        title=f"{selected_gene} Expression Comparison"
     )
 
 
-    # Add normal average marker
-    fig.add_scatter(
-        x=["Normal Kidney"],
-        y=[normal_value],
-        mode="markers",
-        marker=dict(
-            size=18,
-            symbol="diamond",
-            color="orange"
-        ),
-        name="Normal Expression"
-    )
-
-
-    # Add cancer average line
-    cancer_avg = cancer_values.mean()
-
-    fig.add_scatter(
-        x=["Kidney Cancer"],
-        y=[cancer_avg],
-        mode="markers",
-        marker=dict(
-            size=18,
-            symbol="diamond",
-            color="red"
-        ),
-        name="Cancer Average"
+    fig.update_traces(
+        texttemplate="%{text:.2f}",
+        textposition="outside"
     )
 
 
     fig.update_layout(
-        xaxis_title="Sample Type",
-        yaxis_title="Expression (nTPM)",
-        showlegend=True
+        xaxis_title="",
+        yaxis_title="Expression (nTPM)"
     )
 
 
@@ -203,27 +177,33 @@ if not normal_gene.empty and not cancer_gene.empty:
     )
 
 
-    # Simple interpretation
+    # Interpretation
+
+    difference = cancer_avg - normal_avg
+
+
     st.write("### 📌 Interpretation")
 
-    difference = cancer_avg - normal_value
 
     if difference > 0:
+
         st.success(
-            f"{selected_gene} shows higher expression in kidney cancer "
+            f"{selected_gene} is upregulated in kidney cancer "
             f"(+{difference:.2f} nTPM)"
         )
 
     else:
+
         st.info(
-            f"{selected_gene} shows lower expression in kidney cancer "
+            f"{selected_gene} is downregulated in kidney cancer "
             f"({difference:.2f} nTPM)"
         )
 
 
 else:
+
     st.warning(
-        "Expression data not available for this gene."
+        "No expression data available for this gene."
     )
 # ==========================================================
 # TOP BIOMARKERS
