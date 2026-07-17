@@ -110,9 +110,8 @@ c4.metric(
 )
 
 st.divider()
-
 # ==========================================================
-# GENE COMPARISON
+# GENE EXPRESSION COMPARISON
 # ==========================================================
 
 st.subheader("🧬 Gene Expression Comparison")
@@ -128,69 +127,124 @@ cg = cancer[
 
 if not ng.empty and not cg.empty:
 
-    # Normal value
+    # -------------------------------
+    # Normal tissue expression
+    # -------------------------------
+
     normal_value = float(
         ng["nTPM"].iloc[0]
     )
 
-    # Cancer values
-    cancer_values = cg.copy()
-
-    cancer_values["log_nTPM"] = np.log2(
-        cancer_values["nTPM"] + 1
+    normal_log = np.log2(
+        normal_value + 1
     )
 
 
-    normal_df = pd.DataFrame({
-        "Group": [f"Normal {selected_tissue}"],
-        "log_nTPM": [
-            np.log2(normal_value + 1)
-        ]
-    })
-
-
-    cancer_df = pd.DataFrame({
+    normal_plot = pd.DataFrame({
 
         "Group": [
-            "Kidney Cancer Cell Lines"
-        ] * len(cancer_values),
+            f"Normal {selected_tissue}"
+        ],
 
-        "log_nTPM": cancer_values["log_nTPM"]
+        "Expression": [
+            normal_log
+        ]
 
     })
 
+
+    # -------------------------------
+    # Cancer expression values
+    # -------------------------------
+
+    cancer_plot = cg.copy()
+
+    cancer_plot["Group"] = (
+        "Kidney Cancer Cell Lines"
+    )
+
+    cancer_plot["Expression"] = np.log2(
+        cancer_plot["nTPM"] + 1
+    )
+
+
+    cancer_plot = cancer_plot[
+        [
+            "Group",
+            "Expression"
+        ]
+    ]
+
+
+    # Combine datasets
 
     plot_df = pd.concat(
         [
-            normal_df,
-            cancer_df
+            normal_plot,
+            cancer_plot
         ],
         ignore_index=True
     )
 
 
-    fig = px.box(
+    # -------------------------------
+    # Violin Plot
+    # -------------------------------
+
+    fig = px.violin(
 
         plot_df,
 
         x="Group",
 
-        y="log_nTPM",
+        y="Expression",
+
+        box=True,
 
         points="all",
 
-        title=f"{selected_gene}: Expression Distribution"
+        title=f"{selected_gene} Expression Distribution"
+
+    )
+
+
+    # Add normal reference marker
+
+    fig.add_scatter(
+
+        x=[
+            f"Normal {selected_tissue}"
+        ],
+
+        y=[
+            normal_log
+        ],
+
+        mode="markers",
+
+        marker=dict(
+            size=14,
+            symbol="diamond"
+        ),
+
+        name="Normal Reference"
 
     )
 
 
     fig.update_layout(
 
-        yaxis_title="log2(nTPM + 1)",
+        template="plotly_white",
+
+        height=550,
+
+        title_x=0.5,
+
+        yaxis_title="log₂(nTPM + 1)",
 
         xaxis_title="",
 
-        height=500
+        showlegend=True
 
     )
 
@@ -198,6 +252,47 @@ if not ng.empty and not cg.empty:
     st.plotly_chart(
         fig,
         use_container_width=True
+    )
+
+
+    # -------------------------------
+    # Expression Statistics
+    # -------------------------------
+
+    st.markdown(
+        "### 📊 Expression Summary"
+    )
+
+
+    cancer_mean = float(
+        cg["nTPM"].mean()
+    )
+
+
+    fold_change = (
+        cancer_mean /
+        (normal_value + 0.01)
+    )
+
+
+    col1, col2, col3 = st.columns(3)
+
+
+    col1.metric(
+        "Normal nTPM",
+        f"{normal_value:.2f}"
+    )
+
+
+    col2.metric(
+        "Cancer Mean nTPM",
+        f"{cancer_mean:.2f}"
+    )
+
+
+    col3.metric(
+        "Fold Change",
+        f"{fold_change:.2f}x"
     )
 
 
@@ -209,7 +304,6 @@ else:
 
 
 st.divider()
-
 # ==========================================================
 # TOP BIOMARKERS
 # ==========================================================
