@@ -255,21 +255,35 @@ st.plotly_chart(
 
 st.divider()
 
+
 # ==========================================================
-# HISTOGRAM
+# HISTOGRAM - Gene Expression Distribution
 # ==========================================================
+
 st.subheader("📈 Distribution of Kidney Cancer Gene Expression")
 
+# Remove zero expression values for log scale
+cancer_positive = cancer[cancer["nTPM"] > 0].copy()
+
+# Log transform expression values
+cancer_positive["log_nTPM"] = np.log2(cancer_positive["nTPM"] + 1)
+
 fig3 = px.histogram(
-
-    cancer,
-
-    x="nTPM",
-
-    nbins=40,
-
+    cancer_positive,
+    x="log_nTPM",
+    nbins=50,
+    title="Log2 Transformed Gene Expression Distribution",
+    labels={
+        "log_nTPM": "Log2(nTPM + 1)",
+        "count": "Number of Genes"
+    },
     color_discrete_sequence=["royalblue"]
+)
 
+fig3.update_layout(
+    xaxis_title="Log2(nTPM + 1)",
+    yaxis_title="Number of Genes",
+    bargap=0.1
 )
 
 st.plotly_chart(
@@ -278,7 +292,6 @@ st.plotly_chart(
 )
 
 st.divider()
-
 # ==========================================================
 # BIOMARKER TABLE
 # ==========================================================
