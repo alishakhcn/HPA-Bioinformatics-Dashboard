@@ -116,136 +116,84 @@ st.divider()
 
 st.subheader("🧬 Gene Expression Comparison")
 
-ng = normal[
+# Get selected gene data
+normal_gene = normal[
     normal["Gene name"] == selected_gene
 ]
 
-cg = cancer[
+cancer_gene = cancer[
     cancer["Gene name"] == selected_gene
 ]
 
 
-if not ng.empty and not cg.empty:
+if not normal_gene.empty and not cancer_gene.empty:
 
-    # -------------------------------
-    # Normal tissue expression
-    # -------------------------------
+    # Normal tissue value (single average value)
+    normal_value = normal_gene["nTPM"].mean()
 
-    normal_value = float(
-        ng["nTPM"].iloc[0]
-    )
-
-    normal_log = np.log2(
-        normal_value + 1
-    )
+    # Cancer cell line values
+    cancer_values = cancer_gene["nTPM"]
 
 
-    normal_plot = pd.DataFrame({
+    # Create dataframe for plotting
+    plot_df = pd.DataFrame({
 
-        "Group": [
-            f"Normal {selected_tissue}"
-        ],
+        "Group": 
+        ["Normal Kidney"] + 
+        ["Kidney Cancer"] * len(cancer_values),
 
-        "Expression": [
-            normal_log
-        ]
+        "Expression": 
+        [normal_value] + 
+        list(cancer_values)
 
     })
 
 
-    # -------------------------------
-    # Cancer expression values
-    # -------------------------------
-
-    cancer_plot = cg.copy()
-
-    cancer_plot["Group"] = (
-        "Kidney Cancer Cell Lines"
-    )
-
-    cancer_plot["Expression"] = np.log2(
-        cancer_plot["nTPM"] + 1
-    )
-
-
-    cancer_plot = cancer_plot[
-        [
-            "Group",
-            "Expression"
-        ]
-    ]
-
-
-    # Combine datasets
-
-    plot_df = pd.concat(
-        [
-            normal_plot,
-            cancer_plot
-        ],
-        ignore_index=True
-    )
-
-
-    # -------------------------------
-    # Violin Plot
-    # -------------------------------
-
-    fig = px.violin(
-
+    # Plot
+    fig = px.strip(
         plot_df,
-
         x="Group",
-
         y="Expression",
-
-        box=True,
-
-        points="all",
-
-        title=f"{selected_gene} Expression Distribution"
-
+        color="Group",
+        stripmode="overlay",
+        title=f"{selected_gene} Expression: Normal vs Kidney Cancer"
     )
 
 
-    # Add normal reference marker
+    # Add normal average marker
+    fig.add_scatter(
+        x=["Normal Kidney"],
+        y=[normal_value],
+        mode="markers",
+        marker=dict(
+            size=18,
+            symbol="diamond",
+            color="orange"
+        ),
+        name="Normal Expression"
+    )
+
+
+    # Add cancer average line
+    cancer_avg = cancer_values.mean()
 
     fig.add_scatter(
-
-        x=[
-            f"Normal {selected_tissue}"
-        ],
-
-        y=[
-            normal_log
-        ],
-
+        x=["Kidney Cancer"],
+        y=[cancer_avg],
         mode="markers",
-
         marker=dict(
-            size=14,
-            symbol="diamond"
+            size=18,
+            symbol="diamond",
+            color="red"
         ),
-
-        name="Normal Reference"
-
+        name="Cancer Average"
     )
 
 
     fig.update_layout(
-
-        template="plotly_white",
-
-        height=550,
-
-        title_x=0.5,
-
-        yaxis_title="log₂(nTPM + 1)",
-
-        xaxis_title="",
-
+        xaxis_title="Sample Type",
+        yaxis_title="Expression (nTPM)",
         showlegend=True
-
     )
 
 
@@ -255,55 +203,28 @@ if not ng.empty and not cg.empty:
     )
 
 
-    # -------------------------------
-    # Expression Statistics
-    # -------------------------------
+    # Simple interpretation
+    st.write("### 📌 Interpretation")
 
-    st.markdown(
-        "### 📊 Expression Summary"
-    )
+    difference = cancer_avg - normal_value
 
+    if difference > 0:
+        st.success(
+            f"{selected_gene} shows higher expression in kidney cancer "
+            f"(+{difference:.2f} nTPM)"
+        )
 
-    cancer_mean = float(
-        cg["nTPM"].mean()
-    )
-
-
-    fold_change = (
-        cancer_mean /
-        (normal_value + 0.01)
-    )
-
-
-    col1, col2, col3 = st.columns(3)
-
-
-    col1.metric(
-        "Normal nTPM",
-        f"{normal_value:.2f}"
-    )
-
-
-    col2.metric(
-        "Cancer Mean nTPM",
-        f"{cancer_mean:.2f}"
-    )
-
-
-    col3.metric(
-        "Fold Change",
-        f"{fold_change:.2f}x"
-    )
+    else:
+        st.info(
+            f"{selected_gene} shows lower expression in kidney cancer "
+            f"({difference:.2f} nTPM)"
+        )
 
 
 else:
-
     st.warning(
-        "No expression data available for this gene."
+        "Expression data not available for this gene."
     )
-
-
-st.divider()
 # ==========================================================
 # TOP BIOMARKERS
 # ==========================================================
