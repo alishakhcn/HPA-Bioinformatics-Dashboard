@@ -114,6 +114,7 @@ st.divider()
 # ==========================================================
 # GENE COMPARISON
 # ==========================================================
+
 st.subheader("🧬 Gene Expression Comparison")
 
 ng = normal[
@@ -124,63 +125,88 @@ cg = cancer[
     cancer["Gene name"] == selected_gene
 ]
 
+
 if not ng.empty and not cg.empty:
 
-    comparison = pd.DataFrame({
+    # Normal value
+    normal_value = float(
+        ng["nTPM"].iloc[0]
+    )
+
+    # Cancer values
+    cancer_values = cg.copy()
+
+    cancer_values["log_nTPM"] = np.log2(
+        cancer_values["nTPM"] + 1
+    )
+
+
+    normal_df = pd.DataFrame({
+        "Group": [f"Normal {selected_tissue}"],
+        "log_nTPM": [
+            np.log2(normal_value + 1)
+        ]
+    })
+
+
+    cancer_df = pd.DataFrame({
 
         "Group": [
-
-            f"Normal ({selected_tissue})",
-
             "Kidney Cancer Cell Lines"
+        ] * len(cancer_values),
 
-        ],
-
-        "nTPM": [
-
-            float(
-                ng["nTPM"].iloc[0]
-            ),
-
-            float(
-                cg["nTPM"].mean()
-            )
-
-        ]
+        "log_nTPM": cancer_values["log_nTPM"]
 
     })
 
-    fig = px.bar(
 
-        comparison,
+    plot_df = pd.concat(
+        [
+            normal_df,
+            cancer_df
+        ],
+        ignore_index=True
+    )
+
+
+    fig = px.box(
+
+        plot_df,
 
         x="Group",
 
-        y="nTPM",
+        y="log_nTPM",
 
-        text="nTPM",
+        points="all",
 
-        color="Group",
-
-        title=f"{selected_gene}: Normal {selected_tissue.title()} vs Kidney Cancer Cell Lines"
+        title=f"{selected_gene}: Expression Distribution"
 
     )
 
-    fig.update_traces(
-        texttemplate="%{text:.2f}",
-        textposition="outside"
+
+    fig.update_layout(
+
+        yaxis_title="log2(nTPM + 1)",
+
+        xaxis_title="",
+
+        height=500
+
     )
+
 
     st.plotly_chart(
         fig,
         use_container_width=True
     )
 
+
 else:
 
     st.warning(
         "No expression data available for this gene."
     )
+
 
 st.divider()
 
