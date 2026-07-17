@@ -133,7 +133,7 @@ if not normal_gene.empty and not cancer_gene.empty:
     cancer_avg = cancer_gene["nTPM"].mean()
 
 
-    # Create simple dataframe
+    # Create dataframe
     comparison_df = pd.DataFrame({
 
         "Sample Type": [
@@ -144,6 +144,11 @@ if not normal_gene.empty and not cancer_gene.empty:
         "Average Expression (nTPM)": [
             normal_avg,
             cancer_avg
+        ],
+
+        "Color": [
+            "Normal",
+            "Cancer"
         ]
 
     })
@@ -155,10 +160,16 @@ if not normal_gene.empty and not cancer_gene.empty:
         x="Sample Type",
         y="Average Expression (nTPM)",
         text="Average Expression (nTPM)",
+        color="Color",
+        color_discrete_map={
+            "Normal": "#1f77b4",   # dark blue
+            "Cancer": "#d62728"    # red
+        },
         title=f"{selected_gene} Expression Comparison"
     )
 
 
+    # Text formatting
     fig.update_traces(
         texttemplate="%{text:.2f}",
         textposition="outside"
@@ -166,8 +177,15 @@ if not normal_gene.empty and not cancer_gene.empty:
 
 
     fig.update_layout(
+
         xaxis_title="",
-        yaxis_title="Expression (nTPM)"
+
+        yaxis_title="Expression (nTPM)",
+
+        showlegend=False,
+
+        height=450
+
     )
 
 
@@ -188,14 +206,14 @@ if not normal_gene.empty and not cancer_gene.empty:
     if difference > 0:
 
         st.success(
-            f"{selected_gene} is upregulated in kidney cancer "
+            f"🧬 {selected_gene} is upregulated in kidney cancer "
             f"(+{difference:.2f} nTPM)"
         )
 
     else:
 
         st.info(
-            f"{selected_gene} is downregulated in kidney cancer "
+            f"🧬 {selected_gene} is downregulated in kidney cancer "
             f"({difference:.2f} nTPM)"
         )
 
